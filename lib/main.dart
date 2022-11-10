@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_api_application/form.dart';
+import 'package:flutter_api_application/service/api_feedback.dart';
 
 void main() {
   runApp(const MyApp());
@@ -14,33 +16,40 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      home: const MyHomePage(title: 'CRUD FEEDBACK'),
     );
   }
 }
 
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key, required this.title});
-
   final String title;
-
   @override
   State<MyHomePage> createState() => _MyHomePageState();
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
-  List<ItemChat> itemChats = [
-    ItemChat(title: "title", subtitle: "subtitle"),
-    ItemChat(title: "title", subtitle: "subtitle"),
-    ItemChat(title: "title", subtitle: "subtitle"),
-    ItemChat(title: "title", subtitle: "subtitle"),
-  ];
+  List _feedback = [];
 
-  void _incrementCounter() {
-    setState(() {
-      _counter++;
+  @override
+  void initState() {
+    _findAllFeedback();
+    super.initState();
+  }
+
+  void _findAllFeedback() async {
+    await ApiFeedback().findAll().then((res) {
+      if (res.code == 200) {
+        final content = res.content!['data'] as List;
+        setState(() {
+          _feedback = content;
+        });
+      }
     });
+  }
+
+  void onUpdate() {
+    _findAllFeedback();
   }
 
   @override
@@ -50,11 +59,21 @@ class _MyHomePageState extends State<MyHomePage> {
         title: Text(widget.title),
       ),
       body: ListView.builder(
-          itemCount: itemChats.length,
-          itemBuilder: ((context, index) => itemChats[index])),
+          itemCount: _feedback.length,
+          itemBuilder: (BuildContext context, int index) {
+            return ItemChat(
+              onUpdate: onUpdate,
+              id: _feedback[index]['id'],
+              subtitle: _feedback[index]['subject'],
+              title: _feedback[index]['content'],
+            );
+          }),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          _updateItemDialog(context);
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => MyForm(onUpdate: onUpdate)),
+          );
         },
         child: const Icon(Icons.add),
       ),
@@ -62,15 +81,30 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 }
 
+//Bisa Beda File
+typedef ListCallback = void Function();
+
 class ItemChat extends StatelessWidget {
+  final ListCallback onUpdate;
+  final String id;
   final String title;
   final String subtitle;
 
   const ItemChat({
     super.key,
+    required this.onUpdate,
+    required this.id,
     required this.title,
     required this.subtitle,
   });
+
+  void _handleDelete(String id) async {
+    await ApiFeedback().delete(id).then((res) {
+      if (res.code == 200) {
+        onUpdate();
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -80,129 +114,30 @@ class ItemChat extends StatelessWidget {
       ),
       title: Text(title),
       subtitle: Text(subtitle),
-      trailing: IconButton(
-        onPressed: () {},
-        icon: PopupMenuButton(
-          itemBuilder: (context) => [
-            PopupMenuItem(
-              child: Text('Edit'),
-            ),
-            PopupMenuItem(
-              child: Text('Hapus'),
-            )
-          ],
-        ),
+      trailing: PopupMenuButton(
+        onSelected: (newValue) {
+          if (newValue == 0) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                  builder: (context) => MyForm(onUpdate: onUpdate, id: id)),
+            );
+          } else {
+            //delete
+            _handleDelete(id);
+          }
+        },
+        itemBuilder: (context) => [
+          PopupMenuItem(
+            child: Text('Edit'),
+            value: 0,
+          ),
+          PopupMenuItem(
+            child: Text('Hapus'),
+            value: 1,
+          )
+        ],
       ),
     );
   }
-}
-
-Future _updateItemDialog(BuildContext context) {
-  return showDialog<String>(
-    context: context,
-    builder: (BuildContext context) => AlertDialog(
-      contentPadding: const EdgeInsets.all(8.0),
-      content: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24.0),
-        child: SizedBox(
-          width: MediaQuery.of(context).size.width,
-          height: MediaQuery.of(context).size.height,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: const EdgeInsets.only(bottom: 8.0),
-                child: Text(
-                  "Tentang",
-                  style: TextStyle(fontSize: 16.0),
-                ),
-              ),
-              TextField(
-                keyboardType: TextInputType.multiline,
-                textCapitalization: TextCapitalization.sentences,
-                minLines: 1,
-                maxLines: 3,
-                decoration: InputDecoration(
-                  hintText: "Teks...",
-                  hintMaxLines: 1,
-                  contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 8.0, vertical: 10),
-                  hintStyle: const TextStyle(
-                    fontSize: 14.0,
-                  ),
-                  fillColor: Colors.white60,
-                  filled: true,
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(4.0),
-                    borderSide: const BorderSide(
-                      color: Colors.black45,
-                      width: 0.2,
-                    ),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(4.0),
-                    borderSide: const BorderSide(
-                      color: Colors.black26,
-                      width: 0.2,
-                    ),
-                  ),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.only(
-                  top: 16.0,
-                  bottom: 8.0,
-                ),
-                child: Text(
-                  "Deskripsi",
-                  style: TextStyle(fontSize: 16.0),
-                ),
-              ),
-              TextField(
-                keyboardType: TextInputType.multiline,
-                textCapitalization: TextCapitalization.sentences,
-                minLines: 7,
-                maxLines: 12,
-                decoration: InputDecoration(
-                  hintText: "Tulis Pesan...",
-                  hintMaxLines: 1,
-                  contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 8.0, vertical: 10),
-                  hintStyle: const TextStyle(
-                    fontSize: 14.0,
-                  ),
-                  fillColor: Colors.white60,
-                  filled: true,
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(4.0),
-                    borderSide: const BorderSide(
-                      color: Colors.black45,
-                      width: 0.2,
-                    ),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(4.0),
-                    borderSide: const BorderSide(
-                      color: Colors.black26,
-                      width: 0.2,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-      actions: <Widget>[
-        TextButton(
-          onPressed: () => Navigator.pop(context, 'Batal'),
-          child: const Text('Batal'),
-        ),
-        TextButton(
-          onPressed: () => Navigator.pop(context, 'Simpan'),
-          child: const Text('Simpan'),
-        ),
-      ],
-    ),
-  );
 }
