@@ -1,4 +1,7 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_api_application/network/feedback_model.dart';
 
 void main() {
   runApp(const MyApp());
@@ -29,18 +32,23 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
   List<ItemChat> itemChats = [
     ItemChat(title: "title", subtitle: "subtitle"),
     ItemChat(title: "title", subtitle: "subtitle"),
     ItemChat(title: "title", subtitle: "subtitle"),
     ItemChat(title: "title", subtitle: "subtitle"),
   ];
+  late Future futureFindOne;
+  //late Future futureCreateFeedback;
+  String nilai = "Kosong";
+  late Future futureAllFeedback;
+  List<String> char = [];
 
-  void _incrementCounter() {
-    setState(() {
-      _counter++;
-    });
+  @override
+  void initState() {
+    futureFindOne = findOne();
+    futureAllFeedback = findAll();
+    super.initState();
   }
 
   @override
@@ -49,14 +57,56 @@ class _MyHomePageState extends State<MyHomePage> {
       appBar: AppBar(
         title: Text(widget.title),
       ),
-      body: ListView.builder(
-          itemCount: itemChats.length,
-          itemBuilder: ((context, index) => itemChats[index])),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          _updateItemDialog(context);
-        },
-        child: const Icon(Icons.add),
+      body: Center(
+        child: Column(
+          children: [
+            FutureBuilder(
+              future: futureFindOne,
+              builder: (context, snapshot) {
+                if (snapshot.hasData) {
+                  return Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(snapshot.data!.id),
+                      Text(snapshot.data!.subject),
+                      Text(snapshot.data!.content),
+                      Text(snapshot.data!.created),
+                    ],
+                  );
+                } else if (snapshot.hasError) {
+                  return Text(snapshot.error.toString());
+                } else {
+                  return Text("Data tidak ada!");
+                }
+              },
+            ),
+            FutureBuilder(
+              future: futureAllFeedback,
+              builder: ((context, snapshot) {
+                if (snapshot.hasData) {
+                  return Text(snapshot.data!.content[0]);
+                } else if (snapshot.hasError) {
+                  return Text(snapshot.error.toString());
+                } else {
+                  return Text("data kosong");
+                }
+              }),
+            ),
+            Text(nilai),
+            TextButton(
+              onPressed: () {
+                createFeedback(
+                  "Layanan Qteams",
+                  "Saya ingin pasang layanan internet",
+                ).then((value) {
+                  nilai = value.toString();
+                  setState(() {});
+                });
+              },
+              child: Text('Post'),
+            )
+          ],
+        ),
       ),
     );
   }
