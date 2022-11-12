@@ -34,8 +34,8 @@ class _MyFormState extends State<MyForm> {
           _feedback = FeedbackModel.fromJson(res.content!);
         });
 
-        _subjectController.text = res.content!['subject'];
-        _contentController.text = res.content!['content'];
+        _subjectController.text = _feedback!.subject;
+        _contentController.text = _feedback!.content!;
       }
     });
   }
