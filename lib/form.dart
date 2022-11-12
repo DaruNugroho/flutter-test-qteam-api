@@ -1,5 +1,9 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_api_application/service/api_feedback.dart';
+
+import 'model/feedback.dart';
 
 typedef FormCallback = void Function();
 
@@ -13,18 +17,23 @@ class MyForm extends StatefulWidget {
 }
 
 class _MyFormState extends State<MyForm> {
+  FeedbackModel? _feedback;
   @override
   void initState() {
     if (widget.id != null) {
       _findOne(widget.id);
     }
-
     super.initState();
   }
 
   void _findOne(id) async {
     await ApiFeedback().findOne(id).then((res) {
       if (res.code == 200) {
+        //Add to model
+        setState(() {
+          _feedback = FeedbackModel.fromJson(res.content!);
+        });
+
         _subjectController.text = res.content!['subject'];
         _contentController.text = res.content!['content'];
       }
@@ -144,6 +153,13 @@ class _MyFormState extends State<MyForm> {
                   ),
                 ),
               ),
+              if (_feedback != null) ...[
+                SizedBox(height: 100),
+                Text('FeedBack WITH Model'),
+                Text(_feedback!.id),
+                Text(_feedback!.subject),
+                Text(_feedback!.content!),
+              ]
             ])));
   }
 }

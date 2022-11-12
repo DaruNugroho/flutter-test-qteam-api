@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_api_application/form.dart';
 import 'package:flutter_api_application/service/api_feedback.dart';
 
+import 'model/feedback.dart';
+
 void main() {
   runApp(const MyApp());
 }
@@ -29,7 +31,7 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  List _feedback = [];
+  List<FeedbackModel> _feedback = [];
 
   @override
   void initState() {
@@ -42,7 +44,7 @@ class _MyHomePageState extends State<MyHomePage> {
       if (res.code == 200) {
         final content = res.content!['data'] as List;
         setState(() {
-          _feedback = content;
+          _feedback = content.map((e) => FeedbackModel.fromJson(e)).toList();
         });
       }
     });
@@ -63,9 +65,9 @@ class _MyHomePageState extends State<MyHomePage> {
           itemBuilder: (BuildContext context, int index) {
             return ItemChat(
               onUpdate: onUpdate,
-              id: _feedback[index]['id'],
-              subtitle: _feedback[index]['subject'],
-              title: _feedback[index]['content'],
+              id: _feedback[index].id,
+              subtitle: _feedback[index].subject,
+              title: _feedback[index].content!,
             );
           }),
       floatingActionButton: FloatingActionButton(
